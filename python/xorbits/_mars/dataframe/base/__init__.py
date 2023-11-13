@@ -14,6 +14,7 @@
 # limitations under the License.
 from .apply import df_apply, series_apply
 from .applymap import df_applymap
+from.where import df_where
 from .astype import astype, index_astype
 from .cartesian_chunk import cartesian_chunk
 from .check_monotonic import (
@@ -72,6 +73,7 @@ def _install():
         setattr(t, "describe", describe)
         setattr(t, "apply", df_apply)
         setattr(t, "applymap", df_applymap)
+        setattr(t,"where",df_where)
         setattr(t, "transform", df_transform)
         setattr(t, "isin", df_isin)
         setattr(t, "shift", shift)

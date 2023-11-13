@@ -544,7 +544,7 @@ def test_apply_with_arrow_dtype_execution(setup):
 
 def test_data_frame_where_execute(setup):
     # Test with a simple condition function
-    df_raw = pd.DataFrame({'A': [1, 2, 3], 'B': [4, 5, 6]})
+    df_raw = pd.DataFrame({"A": [1, 2, 3], "B": [4, 5, 6]})
     df = from_pandas_df(df_raw, chunk_size=2)
 
     condition = lambda x: x % 2 == 0
@@ -560,7 +560,7 @@ def test_data_frame_where_execute(setup):
     pd.testing.assert_frame_equal(result, expected)
 
     # Test with 'other' parameter as a DataFrame
-    other_df = pd.DataFrame({'A': [-1, -2, -3], 'B': [-4, -5, -6]})
+    other_df = pd.DataFrame({"A": [-1, -2, -3], "B": [-4, -5, -6]})
     r = df.where(df, condition, other=from_pandas_df(other_df, chunk_size=2))
     result = r.execute().fetch()
     expected = df_raw.where(df_raw.where(condition), other_df)
@@ -581,7 +581,7 @@ def test_data_frame_where_execute(setup):
     pd.testing.assert_frame_equal(result, expected)
 
     # Test with a DataFrame containing NaN values
-    df_raw = pd.DataFrame({'A': [1, 2, np.nan], 'B': [4, np.nan, 6]})
+    df_raw = pd.DataFrame({"A": [1, 2, np.nan], "B": [4, np.nan, 6]})
     df = from_pandas_df(df_raw, chunk_size=2)
 
     condition = lambda x: not pd.isna(x)

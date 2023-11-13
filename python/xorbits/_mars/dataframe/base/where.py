@@ -11,19 +11,20 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-import cloudpickle
-import pandas as pd
 from typing import Callable, Union
+
+import cloudpickle
 import numpy as np
+import pandas as pd
 
 from ... import opcodes
-from ...core import OutputType
 from ...core.context import Context
 from ...core.custom_log import redirect_custom_log
 from ...serialization.serializables import AnyField, DictField, StringField
 from ...utils import enter_current_session, get_func_token
 from ..operands import DataFrameOperand, DataFrameOperandMixin
 from ..utils import build_empty_df, parse_index
+
 
 class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
     _op_type_ = opcodes.WHERE
@@ -97,7 +98,14 @@ class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
         kw.update(dict(chunks=chunks, nsplits=new_nsplits))
         return new_op.new_tileables(op.inputs, **kw)
 
-    def __call__(self, df: pd.DataFrame, condition: Callable, other: Union[pd.DataFrame, pd.Series], skip_infer: bool = False, **kwds):
+    def __call__(
+        self,
+        df: pd.DataFrame,
+        condition: Callable,
+        other: Union[pd.DataFrame, pd.Series],
+        skip_infer: bool = False,
+        **kwds,
+    ):
         self.func_token = get_func_token(condition)
         if skip_infer:
             self.condition = cloudpickle.dumps(condition)
@@ -131,6 +139,7 @@ class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
             index_value=index_value,
             columns_value=parse_index(dtypes.index, store_data=True),
         )
+
 
 def df_where(
     df: pd.DataFrame,

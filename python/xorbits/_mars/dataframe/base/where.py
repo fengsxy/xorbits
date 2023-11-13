@@ -21,9 +21,9 @@ from ...core import OutputType
 from ...core.context import Context
 from ...core.custom_log import redirect_custom_log
 from ...serialization.serializables import AnyField, DictField, StringField
-from ...utils import enter_current_session, get_func_token, quiet_stdio
+from ...utils import enter_current_session, get_func_token
 from ..operands import DataFrameOperand, DataFrameOperandMixin
-from ..utils import build_df, build_empty_df, parse_index
+from ..utils import build_empty_df, parse_index
 
 class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
     _op_type_ = opcodes.WHERE

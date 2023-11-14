@@ -18,12 +18,13 @@ import numpy as np
 import pandas as pd
 
 from ... import opcodes
+from ...core import OutputType
 from ...core.context import Context
 from ...core.custom_log import redirect_custom_log
 from ...serialization.serializables import AnyField, DictField, StringField
-from ...utils import enter_current_session, get_func_token
+from ...utils import enter_current_session, quiet_stdio
 from ..operands import DataFrameOperand, DataFrameOperandMixin
-from ..utils import build_empty_df, parse_index
+from ..utils import build_df, build_empty_df, parse_index
 
 
 class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
@@ -98,21 +99,15 @@ class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
         kw.update(dict(chunks=chunks, nsplits=new_nsplits))
         return new_op.new_tileables(op.inputs, **kw)
 
-    def __call__(
-        self,
-        df: pd.DataFrame,
-        condition: Callable,
-        other: Union[pd.DataFrame, pd.Series],
-        skip_infer: bool = False,
-        **kwds,
-    ):
-        self.func_token = get_func_token(condition)
+    def __call__(self, df: pd.DataFrame, skip_infer: bool = False):
+        condition = self._load_condition()
+        other = self._load_other()
+
         if skip_infer:
-            self.condition = cloudpickle.dumps(condition)
-            self.other = cloudpickle.dumps(other)
+            condition = cloudpickle.dumps(condition)
+            other = cloudpickle.dumps(other)
             return self.new_dataframe([df])
 
-        # for backward compatibility
         dtypes, index_value = self._infer_df_func_returns(df)
 
         if index_value is None:
@@ -129,8 +124,8 @@ class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
 
         shape = df.shape
 
-        self.condition = cloudpickle.dumps(condition)
-        self.other = cloudpickle.dumps(other)
+        condition = cloudpickle.dumps(condition)
+        other = cloudpickle.dumps(other)
 
         return self.new_dataframe(
             [df],
@@ -139,6 +134,42 @@ class DataFrameWhere(DataFrameOperand, DataFrameOperandMixin):
             index_value=index_value,
             columns_value=parse_index(dtypes.index, store_data=True),
         )
+
+    def _infer_df_func_returns(self, df: pd.DataFrame):
+        condition = self._load_condition()
+        other = self._load_other()
+
+        if isinstance(condition, np.ufunc):
+            output_type = OutputType.dataframe
+            new_dtypes = None
+            index_value = "inherit"
+        else:
+            output_type = new_dtypes = index_value = None
+
+        try:
+            empty_df = build_df(df, size=2)
+            with np.errstate(all="ignore"), quiet_stdio():
+                infer_df = empty_df.where(
+                    condition,
+                    other=other,
+                    **self.kwds,
+                )
+            if index_value is None:
+                if infer_df.index is empty_df.index:
+                    index_value = "inherit"
+                else:
+                    index_value = parse_index(pd.RangeIndex(-1))
+
+            output_type = output_type or OutputType.dataframe
+            new_dtypes = new_dtypes or infer_df.dtypes
+        except:
+            pass
+
+        self.output_types = (
+            [output_type] if not self.output_types else self.output_types
+        )
+        dtypes = new_dtypes
+        return dtypes, index_value
 
 
 def df_where(

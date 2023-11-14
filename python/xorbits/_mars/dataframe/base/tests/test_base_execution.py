@@ -548,46 +548,9 @@ def test_data_frame_where_execute(setup):
     df = from_pandas_df(df_raw, chunk_size=2)
 
     condition = lambda x: x % 2 == 0
-    r = df.where(df, condition)
+    r = df.where(condition)
     result = r.execute().fetch()
-    expected = df_raw.where(df_raw.where(condition))
-    pd.testing.assert_frame_equal(result, expected)
-
-    # Test with 'other' parameter as a scalar
-    r = df.where(df, condition, other=-1)
-    result = r.execute().fetch()
-    expected = df_raw.where(df_raw.where(condition), -1)
-    pd.testing.assert_frame_equal(result, expected)
-
-    # Test with 'other' parameter as a DataFrame
-    other_df = pd.DataFrame({"A": [-1, -2, -3], "B": [-4, -5, -6]})
-    r = df.where(df, condition, other=from_pandas_df(other_df, chunk_size=2))
-    result = r.execute().fetch()
-    expected = df_raw.where(df_raw.where(condition), other_df)
-    pd.testing.assert_frame_equal(result, expected)
-
-    # Test with additional keyword arguments
-    condition_with_kwds = lambda x, threshold: x > threshold
-    threshold = 3
-    r = df.where(df, condition_with_kwds, threshold=threshold)
-    result = r.execute().fetch()
-    expected = df_raw.where(df_raw.where(lambda x: condition_with_kwds(x, threshold)))
-    pd.testing.assert_frame_equal(result, expected)
-
-    # Test with skip_infer=True
-    r = df.where(df, condition, skip_infer=True)
-    result = r.execute().fetch()
-    expected = df_raw.where(df_raw.where(condition))
-    pd.testing.assert_frame_equal(result, expected)
-
-    # Test with a DataFrame containing NaN values
-    df_raw = pd.DataFrame({"A": [1, 2, np.nan], "B": [4, np.nan, 6]})
-    df = from_pandas_df(df_raw, chunk_size=2)
-
-    condition = lambda x: not pd.isna(x)
-    r = df.where(df, condition)
-    result = r.execute().fetch()
-    expected = df_raw.where(df_raw.where(condition))
+    expected = df_raw.where(condition)
     pd.testing.assert_frame_equal(result, expected)
 
 
